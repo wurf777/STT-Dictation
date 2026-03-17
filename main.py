@@ -34,13 +34,18 @@ class App:
 
     def run(self):
         """Start all components and run the app."""
-        # Load model (takes a moment)
+        # Start feedback window early so we can show loading status
+        if self.feedback:
+            self.feedback.start()
+            self.feedback.show("⏳ Laddar Whisper-modell...")
+
+        # Load model (takes a moment — downloads on first run)
         print("[app] Laddar Whisper-modell...")
         self.transcriber.load_model()
 
-        # Start feedback window thread
         if self.feedback:
-            self.feedback.start()
+            self.feedback.update_text("✅ Redo!")
+            self.feedback.hide_after_delay(1500)
 
         # Start hotkey listener
         self.hotkey.start()
