@@ -55,6 +55,7 @@ class SettingsWindow:
         self._device_var = tk.StringVar(master=root)
         self._output_var = tk.StringVar(master=root)
         self._feedback_var = tk.BooleanVar(master=root)
+        self._beam_var = tk.IntVar(master=root)
 
         # Header
         tk.Label(root, text="Inställningar", font=font_bold, bg=BG, fg=FG).grid(
@@ -116,6 +117,28 @@ class SettingsWindow:
             row=row, column=1, sticky="w", **pad)
         row += 1
 
+        # ── Beam size ────────────────────────────────────────
+        tk.Label(root, text="Beam size:", font=font, bg=BG, fg=FG).grid(
+            row=row, column=0, sticky="w", **pad)
+
+        beam_frame = tk.Frame(root, bg=BG)
+        beam_frame.grid(row=row, column=1, sticky="ew", **pad)
+
+        self._beam_value_label = tk.Label(
+            beam_frame, textvariable=self._beam_var, font=("Segoe UI", 11, "bold"),
+            bg=FIELD_BG, fg=FG, width=3, anchor="center", relief="sunken")
+        self._beam_value_label.pack(side="left", padx=(0, 8))
+
+        tk.Scale(beam_frame, from_=1, to=5, orient="horizontal",
+                 variable=self._beam_var, showvalue=False,
+                 font=font, bg=BG, fg=FG, troughcolor=FIELD_BG,
+                 activebackground="#45475a", highlightthickness=0,
+                 length=150).pack(side="left")
+
+        tk.Label(beam_frame, text="(1=snabb, 5=bäst)", font=("Segoe UI", 9),
+                 bg=BG, fg="#6c7086").pack(side="left", padx=(8, 0))
+        row += 1
+
         # ── Buttons ──────────────────────────────────────────
         btn_frame = tk.Frame(root, bg=BG)
         btn_frame.grid(row=row, column=0, columnspan=2, pady=(12, 15), padx=10, sticky="e")
@@ -171,6 +194,7 @@ class SettingsWindow:
 
         self._output_var.set(config.get("output_mode") or "auto_paste")
         self._feedback_var.set(config.get("show_feedback_window") if config.get("show_feedback_window") is not None else True)
+        self._beam_var.set(config.get("beam_size") or 5)
 
     def _start_hotkey_capture(self):
         """Enter hotkey capture mode — supports single keys and combinations."""
@@ -205,12 +229,14 @@ class SettingsWindow:
 
         config.set("output_mode", self._output_var.get())
         config.set("show_feedback_window", self._feedback_var.get())
+        config.set("beam_size", self._beam_var.get())
 
         config.save()
         print(f"[settings] Sparade: hotkey={config.get('hotkey')}, "
               f"output={config.get('output_mode')}, "
               f"device={config.get('audio_device')}, "
-              f"feedback={config.get('show_feedback_window')}")
+              f"feedback={config.get('show_feedback_window')}, "
+              f"beam_size={config.get('beam_size')}")
 
         if self._on_save:
             self._on_save()

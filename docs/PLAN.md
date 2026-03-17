@@ -130,7 +130,8 @@ FEEDBACK_AUTO_CLOSE_DELAY = 2500  # ms innan fönstret stängs efter klar transk
 10. ✅ `config.py` – JSON-persistens av inställningar (`settings.json`)
 11. ✅ CUDA-stöd – automatisk DLL-laddning från pip-paket
 12. ✅ Optimering – tystnadstrimning av ljud före transkribering
-13. Enkel README med installationsinstruktioner
+13. ✅ Beam size konfigurerbar i settings-fönstret
+14. ✅ Enkel README med installationsinstruktioner
 
 ---
 
