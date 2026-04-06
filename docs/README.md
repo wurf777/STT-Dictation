@@ -54,6 +54,22 @@ Högerklicka tray-ikonen → **Inställningar** för att konfigurera:
 
 Inställningar sparas i `settings.json`.
 
+## Bygga och distribuera
+
+Bygg fristående exe med PyInstaller:
+
+```bash
+pyinstaller "STT Dictation.spec" --noconfirm
+```
+
+Resultatet hamnar i `dist\STT Dictation\`. Kopiera sedan till målmappen:
+
+```bash
+deploy.bat
+```
+
+Skriptet kopierar `dist\STT Dictation\` till `C:\Program_USB\STT Dictation\` och rensar bort gamla filer. `settings.json` i målmappen berörs aldrig, så användarens inställningar bevaras.
+
 ## Teknik
 
 - **faster-whisper** med [KB-Whisper](https://huggingface.co/KBLab/kb-whisper-medium) (svenska)

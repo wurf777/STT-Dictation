@@ -3,13 +3,33 @@
 import os
 import sys
 
-# Add NVIDIA pip package DLL paths so CTranslate2 can find cublas/cudnn
-_site_packages = os.path.join(os.path.dirname(sys.executable), "..", "lib", "site-packages")
-for _lib in ("nvidia/cublas/bin", "nvidia/cudnn/bin"):
-    _dll_path = os.path.normpath(os.path.join(_site_packages, _lib))
-    if os.path.isdir(_dll_path):
-        os.add_dll_directory(_dll_path)
-        os.environ["PATH"] = _dll_path + os.pathsep + os.environ.get("PATH", "")
+# Add NVIDIA pip package DLL paths so CTranslate2 can find cublas/cudnn.
+# Handles both normal Python environments and PyInstaller bundles.
+def _add_nvidia_dll_dirs():
+    candidates = []
+
+    if getattr(sys, "frozen", False):
+        # PyInstaller onedir: DLLs land next to the exe or in _internal/
+        exe_dir = os.path.dirname(sys.executable)
+        candidates.append(exe_dir)
+        if hasattr(sys, "_MEIPASS"):
+            candidates.append(sys._MEIPASS)
+        for sub in ("nvidia/cublas/bin", "nvidia/cudnn/bin"):
+            candidates.append(os.path.join(exe_dir, sub))
+            if hasattr(sys, "_MEIPASS"):
+                candidates.append(os.path.join(sys._MEIPASS, sub))
+    else:
+        # Normal venv: packages are in site-packages/nvidia/...
+        site_pkgs = os.path.join(os.path.dirname(sys.executable), "..", "lib", "site-packages")
+        for sub in ("nvidia/cublas/bin", "nvidia/cudnn/bin"):
+            candidates.append(os.path.normpath(os.path.join(site_pkgs, sub)))
+
+    for path in candidates:
+        if os.path.isdir(path):
+            os.add_dll_directory(path)
+            os.environ["PATH"] = path + os.pathsep + os.environ.get("PATH", "")
+
+_add_nvidia_dll_dirs()
 
 import numpy as np
 from faster_whisper import WhisperModel

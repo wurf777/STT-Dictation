@@ -1,31 +1,25 @@
 """System tray icon using pystray — provides status indicator and exit option."""
 
+import os
+import sys
 import threading
-from PIL import Image, ImageDraw
+from PIL import Image
 import pystray
 
 
-def _create_icon_image(color="#4fc3f7", size=64):
-    """Create a simple microphone-style icon."""
-    img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    # Rounded rectangle body
-    draw.rounded_rectangle(
-        [size * 0.3, size * 0.1, size * 0.7, size * 0.55],
-        radius=size * 0.15,
-        fill=color,
-    )
-    # Stand
-    draw.arc(
-        [size * 0.2, size * 0.35, size * 0.8, size * 0.7],
-        start=0, end=180, fill=color, width=3,
-    )
-    # Stem
-    cx = size // 2
-    draw.line([(cx, size * 0.7), (cx, size * 0.85)], fill=color, width=3)
-    # Base
-    draw.line([(size * 0.3, size * 0.85), (size * 0.7, size * 0.85)], fill=color, width=3)
-    return img
+def _load_icon_image():
+    """Load icon.png — checks _MEIPASS (PyInstaller _internal/) then exe dir."""
+    candidates = []
+    if getattr(sys, "frozen", False):
+        if hasattr(sys, "_MEIPASS"):
+            candidates.append(os.path.join(sys._MEIPASS, "icon.png"))
+        candidates.append(os.path.join(os.path.dirname(sys.executable), "icon.png"))
+    else:
+        candidates.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "icon.png"))
+    for path in candidates:
+        if os.path.exists(path):
+            return Image.open(path).convert("RGBA")
+    raise FileNotFoundError(f"icon.png hittades inte. Sökte i: {candidates}")
 
 
 class TrayIcon:
@@ -44,7 +38,7 @@ class TrayIcon:
         )
         self._icon = pystray.Icon(
             name="stt-dictation",
-            icon=_create_icon_image(),
+            icon=_load_icon_image(),
             title="STT Dictation — Redo",
             menu=menu,
         )
