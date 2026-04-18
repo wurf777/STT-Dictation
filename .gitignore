@@ -10,3 +10,15 @@ dist/
 
 # User settings
 settings.json
+
+# Internal dev notes
+CLAUDE.md
+docs/PLAN.md
+
+# Environment / secrets (future-proofing)
+.env
+*.env
+
+# OS-skräp
+Thumbs.db
+.DS_Store
