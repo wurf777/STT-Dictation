@@ -23,9 +23,10 @@ def _load_icon_image():
 
 
 class TrayIcon:
-    def __init__(self, on_exit=None, on_settings=None):
+    def __init__(self, on_exit=None, on_settings=None, on_vocabulary=None):
         self._on_exit = on_exit
         self._on_settings = on_settings
+        self._on_vocabulary = on_vocabulary
         self._icon = None
 
     def start(self):
@@ -33,6 +34,7 @@ class TrayIcon:
         menu = pystray.Menu(
             pystray.MenuItem("STT Dictation", None, enabled=False),
             pystray.Menu.SEPARATOR,
+            pystray.MenuItem("Ordlista...", self._vocabulary_clicked),
             pystray.MenuItem("Inställningar...", self._settings_clicked),
             pystray.MenuItem("Avsluta", self._exit_clicked),
         )
@@ -57,6 +59,10 @@ class TrayIcon:
     def _settings_clicked(self, icon, item):
         if self._on_settings:
             self._on_settings()
+
+    def _vocabulary_clicked(self, icon, item):
+        if self._on_vocabulary:
+            self._on_vocabulary()
 
     def _exit_clicked(self, icon, item):
         # on_exit callback (shutdown) calls tray.stop(), so no need to call it here

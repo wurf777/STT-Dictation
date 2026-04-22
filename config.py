@@ -19,6 +19,8 @@ DEFAULTS = {
     "feedback_window_position": "bottom-right",
     "feedback_auto_close_delay": 2500,
     "beam_size": 5,                    # 1 = snabbast, 5 = bäst kvalitet
+    "vocabulary": [],                  # Ord/namn som nudgar modellen (initial_prompt)
+    "replacements": {},                # {"fel stavning": "rätt stavning"} — efterbehandling
 }
 
 # ── Load / Save ──────────────────────────────────────────────
