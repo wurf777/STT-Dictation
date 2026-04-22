@@ -14,6 +14,7 @@ from output_handler import output_text
 from feedback_window import FeedbackWindow
 from tray import TrayIcon
 from settings_window import SettingsWindow
+from vocabulary_window import VocabularyWindow
 import config
 
 
@@ -22,13 +23,18 @@ class App:
         self.recorder = Recorder()
         self.transcriber = Transcriber()
         self.feedback = FeedbackWindow() if config.get("show_feedback_window") else None
-        self.tray = TrayIcon(on_exit=self.shutdown, on_settings=self.open_settings)
+        self.tray = TrayIcon(
+            on_exit=self.shutdown,
+            on_settings=self.open_settings,
+            on_vocabulary=self.open_vocabulary,
+        )
         self.hotkey = HotkeyManager(
             on_press=self.on_hotkey_press,
             on_release=self.on_hotkey_release,
             hotkey=config.get("hotkey"),
         )
         self.settings_window = SettingsWindow(on_save=self._apply_settings)
+        self.vocabulary_window = VocabularyWindow()
         self._audio_device = config.get("audio_device")
         self._transcribe_lock = threading.Lock()
 
@@ -113,6 +119,10 @@ class App:
     def open_settings(self):
         """Open the settings window."""
         self.settings_window.open()
+
+    def open_vocabulary(self):
+        """Open the vocabulary window."""
+        self.vocabulary_window.open()
 
     def _apply_settings(self):
         """Called when settings are saved — apply changes live."""
