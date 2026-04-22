@@ -1,6 +1,7 @@
 """Whisper transcriber using faster-whisper with KB-Whisper models."""
 
 import os
+import re
 import sys
 
 # Add NVIDIA pip package DLL paths so CTranslate2 can find cublas/cudnn.
@@ -87,13 +88,14 @@ class Transcriber:
             beam_size=config.get("beam_size") or 1,
             word_timestamps=True,
             vad_filter=True,
+            initial_prompt=_build_initial_prompt(),
         )
 
         text_parts = []
         for segment in segments:
             text_parts.append(segment.text.strip())
 
-        return " ".join(text_parts)
+        return _apply_replacements(" ".join(text_parts))
 
     def transcribe_streaming(self, audio: np.ndarray):
         """Yield segments one by one for progressive display."""
@@ -109,7 +111,30 @@ class Transcriber:
             beam_size=config.get("beam_size") or 1,
             word_timestamps=True,
             vad_filter=True,
+            initial_prompt=_build_initial_prompt(),
         )
 
         for segment in segments:
             yield segment
+
+
+def _build_initial_prompt() -> str | None:
+    """Build the initial_prompt string from the user's vocabulary list."""
+    vocab = config.get("vocabulary") or []
+    vocab = [w.strip() for w in vocab if isinstance(w, str) and w.strip()]
+    if not vocab:
+        return None
+    return ", ".join(vocab) + "."
+
+
+def _apply_replacements(text: str) -> str:
+    """Apply user-defined replacements as whole-word, case-insensitive swaps."""
+    replacements = config.get("replacements") or {}
+    if not text or not replacements:
+        return text
+    for src, dst in replacements.items():
+        if not src:
+            continue
+        pattern = re.compile(rf"(?<!\w){re.escape(src)}(?!\w)", re.IGNORECASE)
+        text = pattern.sub(dst, text)
+    return text
