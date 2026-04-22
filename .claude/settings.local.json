@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh repo *)",
+      "Bash(gh release *)",
+      "Bash(powershell -Command \"Compress-Archive -Path 'dist\\\\STT Dictation' -DestinationPath 'STT-Dictation-v1.0.0-windows.zip' -Force\")"
+    ]
+  }
+}
