@@ -6,7 +6,6 @@ __pycache__/
 # PyInstaller
 build/
 dist/
-*.spec
 
 # User settings
 settings.json
@@ -18,6 +17,9 @@ docs/PLAN.md
 # Environment / secrets (future-proofing)
 .env
 *.env
+
+# Claude-inställningar (innehåller lokala sökvägar)
+.claude/
 
 # OS-skräp
 Thumbs.db

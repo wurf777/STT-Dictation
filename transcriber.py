@@ -3,6 +3,7 @@
 import os
 import re
 import sys
+from typing import Optional
 
 # Add NVIDIA pip package DLL paths so CTranslate2 can find cublas/cudnn.
 # Handles both normal Python environments and PyInstaller bundles.
@@ -118,17 +119,17 @@ class Transcriber:
             yield segment
 
 
-def _build_initial_prompt() -> str | None:
-    """Build the initial_prompt string from the user's vocabulary list."""
+def _build_initial_prompt() -> Optional[str]:
     vocab = config.get("vocabulary") or []
     vocab = [w.strip() for w in vocab if isinstance(w, str) and w.strip()]
     if not vocab:
         return None
-    return ", ".join(vocab) + "."
+    prompt = ", ".join(vocab) + "."
+    print(f"[vocab] initial_prompt: {prompt}")
+    return prompt
 
 
 def _apply_replacements(text: str) -> str:
-    """Apply user-defined replacements as whole-word, case-insensitive swaps."""
     replacements = config.get("replacements") or {}
     if not text or not replacements:
         return text
@@ -136,5 +137,8 @@ def _apply_replacements(text: str) -> str:
         if not src:
             continue
         pattern = re.compile(rf"(?<!\w){re.escape(src)}(?!\w)", re.IGNORECASE)
-        text = pattern.sub(dst, text)
+        new_text = pattern.sub(dst, text)
+        if new_text != text:
+            print(f"[vocab] ersätter '{src}' → '{dst}'")
+            text = new_text
     return text

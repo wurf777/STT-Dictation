@@ -4,8 +4,16 @@ Hold F9 to record, release to transcribe and paste.
 Runs as a system tray application.
 """
 
+import os
 import sys
 import threading
+
+# Python 3.13 on Windows installs Tcl/Tk under tcl/ rather than lib/,
+# so tkinter can't find init.tcl without this hint.
+_tcl_dir = os.path.join(sys.base_prefix, "tcl")
+if os.path.isdir(_tcl_dir) and "TCL_LIBRARY" not in os.environ:
+    os.environ["TCL_LIBRARY"] = os.path.join(_tcl_dir, "tcl8.6")
+    os.environ["TK_LIBRARY"] = os.path.join(_tcl_dir, "tk8.6")
 
 from recorder import Recorder
 from transcriber import Transcriber
