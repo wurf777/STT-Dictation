@@ -21,7 +21,12 @@ Status for STT Dictation efter arbetet med smartare diktering.
 - Korrigeringsfonstret har knappar for:
   - spara facit
   - spara och klistra in korrigerad text
+  - godkanna direkta ordlisteforslag
+  - lagga ordlisteforslag i en larandekorg
 - Korrigeringsfonstret forsoker lyfta sig till fokus nar det oppnas.
+- Korrigeringsfonstret visar en enkel diff mellan ra Whisper-text och facit.
+- Om ra text och facit ar identiska forklarar fonstret att appen inte har nagon
+  skillnad att lara sig av annu.
 - Regelbaserad svensk efterprocessor finns i `post_processor.py`.
 - Efterprocessorn tolkar just nu:
   - `komma` -> `,`
@@ -40,6 +45,7 @@ Status for STT Dictation efter arbetet med smartare diktering.
 - `test_post_processor.py` - enkla regressionstester for efterprocessorn.
 - `dictation_history.py` - lokal historik och korrigeringar.
 - `correction_window.py` - GUI for att korrigera senaste diktat.
+- `learning_suggestions.py` - foreslar replacement-regler och sparar larandekorg.
 - `output_handler.py` - urklipp, inklistring och senaste diktat.
 - `transcriber.py` - Whisper-transkribering, ordtider och pauser.
 
@@ -54,7 +60,7 @@ Eftersom `pytest` inte finns i `.venv` just nu kor vi testerna direkt:
 Syntaxkontroll:
 
 ```powershell
-.\.venv\Scripts\python.exe -m compileall main.py transcriber.py post_processor.py dictation_history.py correction_window.py output_handler.py hotkey_manager.py tray.py config.py
+.\.venv\Scripts\python.exe -m compileall main.py transcriber.py post_processor.py dictation_history.py correction_window.py learning_suggestions.py output_handler.py hotkey_manager.py tray.py config.py
 ```
 
 ## Installerad kopia
@@ -96,3 +102,45 @@ Bygg och deploy:
 - Pausdata loggas men anvands inte for output annu.
 - Korrigeringsfacit sparas, men det finns annu inget analysverktyg som foreslar nya regler automatiskt.
 - Om automatisk inklistring ger forra diktatet men F10 ger ratt diktat, ar det troligen clipboard-race. Hoja `clipboard_restore_delay_ms`.
+
+## Tillagt: forsta larandeforslagen
+
+- `learning_suggestions.py` jamfor ra Whisper-text med korrigerat facit och
+  foreslar korta konkreta ersattningsregler.
+- `correction_window.py` visar nu en lista med forslag under korrigeringsrutan.
+- Knapparna `Godkann markerad` och `Godkann alla` sparar forslag till
+  `replacements` i `settings.json`.
+- Knapparna `Lagg markerad i korg` och `Lagg alla i korg` sparar forslag till
+  `data/learning_basket.jsonl` utan att aktivera dem.
+- Det ar medvetet att forsta versionen anvander `replacements` i stallet for
+  `vocabulary`: ersattningar ar exakta och ger direkt effekt, medan vocabulary
+  bara nudgar Whisper och inte garanterar resultat.
+
+## Aktuell strategi for smartare inlarning
+
+1. Fortsatt samla riktiga exempel i `data/dictation_history.jsonl`.
+2. Anvand korrigeringsfonstret for att spara facit nar Whisper eller
+   efterprocessorn gor fel.
+3. Godkann bara enkla, uppenbara regler direkt.
+4. Lagg osakra forslag i `data/learning_basket.jsonl` och ga igenom dem senare.
+5. Nar korgen och historiken innehaller tillrackligt manga riktiga exempel kan
+   en lokal Gemma/Ollama-modell analysera monster och foresla mer generella
+   regler.
+
+Sprakmodellen ska inledningsvis vara ett analyslager: den far foresla och
+forklara, men inte automatiskt skriva om alla diktat utan godkannande.
+
+Test for larandeforslag:
+
+```powershell
+.\.venv\Scripts\python.exe -c "import test_learning_suggestions as t; t.test_suggests_short_replacement_from_correction(); t.test_skips_identical_text(); t.test_adds_candidate_to_learning_basket(); print('learning suggestion tests ok')"
+```
+
+## Tillagt: sakrare anvandardata vid deploy
+
+- Installerad app anvander nu mappen bredvid `STT Dictation.exe` for
+  `settings.json` och `data/`.
+- `deploy.bat` har kort retry-tid (`/R:2 /W:2`) sa kopiering inte fastnar om
+  appen fortfarande ar igang.
+- `deploy.bat` skyddar `data` och legacy-`_internal\data` fran purge, sa lokal
+  historik inte rensas vid uppdatering.

@@ -3,7 +3,7 @@ set SOURCE=dist\STT Dictation
 set TARGET=C:\Program_USB\STT Dictation
 
 echo Kopierar till %TARGET%...
-robocopy "%SOURCE%" "%TARGET%" /E /PURGE /XF settings.json
+robocopy "%SOURCE%" "%TARGET%" /E /PURGE /XF settings.json /XD "%TARGET%\data" "%TARGET%\_internal\data" /R:2 /W:2
 if %ERRORLEVEL% LEQ 7 (
     echo Klart!
 ) else (

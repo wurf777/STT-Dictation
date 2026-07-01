@@ -113,9 +113,7 @@ def save_correction(corrected_text: str, record_id: Optional[str] = None) -> boo
 
 def _history_path() -> str:
     configured = config.get("dictation_history_path")
-    if os.path.isabs(configured):
-        return configured
-    return os.path.join(os.path.dirname(os.path.abspath(__file__)), configured)
+    return config.resolve_app_path(configured)
 
 
 def _read_records() -> list[dict]:

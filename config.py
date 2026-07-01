@@ -2,10 +2,26 @@
 
 import json
 import os
+import sys
 import sounddevice as sd
 
-# Path to user settings file (next to the script)
-_SETTINGS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "settings.json")
+
+def app_data_dir() -> str:
+    """Return the writable app data directory for source and frozen builds."""
+    if getattr(sys, "frozen", False):
+        return os.path.dirname(os.path.abspath(sys.executable))
+    return os.path.dirname(os.path.abspath(__file__))
+
+
+def resolve_app_path(path: str) -> str:
+    """Resolve a relative app data path against the writable app data directory."""
+    if os.path.isabs(path):
+        return path
+    return os.path.join(app_data_dir(), path)
+
+
+# Path to user settings file (next to the script or installed exe)
+_SETTINGS_FILE = resolve_app_path("settings.json")
 
 # ── Defaults ─────────────────────────────────────────────────
 DEFAULTS = {
@@ -28,6 +44,7 @@ DEFAULTS = {
     "correction_hotkey": "ctrl+alt+f10",
     "dictation_learning_enabled": True,
     "dictation_history_path": os.path.join("data", "dictation_history.jsonl"),
+    "learning_basket_path": os.path.join("data", "learning_basket.jsonl"),
     "post_process_enabled": True,
 }
 
