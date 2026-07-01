@@ -2,12 +2,12 @@
 
 import threading
 import tkinter as tk
-from difflib import ndiff
 from tkinter import ttk
 
 from learning_suggestions import (
     add_to_learning_basket,
     approve_replacement,
+    find_text_changes,
     suggest_replacements,
 )
 
@@ -431,16 +431,23 @@ class CorrectionWindow:
 
 
 def _format_diff(raw_text, corrected_text):
-    raw_tokens = (raw_text or "").split()
-    corrected_tokens = (corrected_text or "").split()
-    if not raw_tokens and not corrected_tokens:
+    raw = (raw_text or "").strip()
+    corrected = (corrected_text or "").strip()
+    if not raw and not corrected:
         return []
-    if raw_tokens == corrected_tokens:
+    if raw == corrected:
         return ["Ingen skillnad mellan råtext och facit ännu."]
 
+    changes = find_text_changes(raw, corrected)
+    if not changes:
+        return ["Ingen tydlig ordskillnad hittades."]
+
     lines = []
-    for token in ndiff(raw_tokens, corrected_tokens):
-        if token.startswith("? "):
-            continue
-        lines.append(token)
+    for change in changes[:12]:
+        if change["from"]:
+            lines.append(f"- {change['from']}")
+        if change["to"]:
+            lines.append(f"+ {change['to']}")
+    if len(changes) > 12:
+        lines.append(f"... {len(changes) - 12} ändring(ar) till")
     return lines[:80]

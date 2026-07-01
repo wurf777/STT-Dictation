@@ -17,11 +17,6 @@ _TOKEN_RE = re.compile(r"\w+|[^\w\s]", re.UNICODE)
 
 def suggest_replacements(raw_text: str, corrected_text: str) -> list[dict]:
     """Return short replacement candidates from raw/corrected text pairs."""
-    raw_tokens = _tokenize(raw_text)
-    corrected_tokens = _tokenize(corrected_text)
-    if not raw_tokens or not corrected_tokens:
-        return []
-
     existing = {
         str(src).strip().lower()
         for src in (config.get("replacements") or {}).keys()
@@ -30,13 +25,9 @@ def suggest_replacements(raw_text: str, corrected_text: str) -> list[dict]:
 
     suggestions = []
     seen = set()
-    matcher = SequenceMatcher(a=_lower_tokens(raw_tokens), b=_lower_tokens(corrected_tokens))
-    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
-        if tag == "equal":
-            continue
-
-        raw_phrase = _untokenize(raw_tokens[i1:i2]).strip()
-        corrected_phrase = _untokenize(corrected_tokens[j1:j2]).strip()
+    for change in find_text_changes(raw_text, corrected_text):
+        raw_phrase = change["from"]
+        corrected_phrase = change["to"]
         if not _is_useful_candidate(raw_phrase, corrected_phrase):
             continue
 
@@ -55,6 +46,39 @@ def suggest_replacements(raw_text: str, corrected_text: str) -> list[dict]:
         )
 
     return suggestions
+
+
+def find_text_changes(raw_text: str, corrected_text: str) -> list[dict]:
+    """Return changed spans only, never unchanged context words."""
+    raw_tokens = _tokenize(raw_text)
+    corrected_tokens = _tokenize(corrected_text)
+    if not raw_tokens or not corrected_tokens:
+        return []
+
+    matcher = SequenceMatcher(
+        None,
+        _lower_tokens(raw_tokens),
+        _lower_tokens(corrected_tokens),
+        autojunk=False,
+    )
+    changes = []
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        if tag == "equal":
+            continue
+
+        raw_phrase = _untokenize(raw_tokens[i1:i2]).strip()
+        corrected_phrase = _untokenize(corrected_tokens[j1:j2]).strip()
+        if raw_phrase.lower() == corrected_phrase.lower():
+            continue
+
+        changes.append(
+            {
+                "from": raw_phrase,
+                "to": corrected_phrase,
+                "tag": tag,
+            }
+        )
+    return changes
 
 
 def approve_replacement(src: str, dst: str) -> bool:
