@@ -31,6 +31,7 @@ class CorrectionWindow:
         self._built = False
         self._record = None
         self._suggestions = []
+        self._refresh_after_id = None
 
     def open(self):
         if self._built and self._root:
@@ -88,6 +89,7 @@ class CorrectionWindow:
             relief="flat",
         )
         self._corrected_text.grid(row=4, column=0, sticky="nsew", padx=12)
+        self._corrected_text.bind("<<Modified>>", self._on_corrected_modified)
 
         tk.Label(root, text="Ändringar", font=font_bold, bg=BG, fg=FG).grid(
             row=5, column=0, sticky="w", padx=12, pady=(12, 4)
@@ -247,6 +249,7 @@ class CorrectionWindow:
         self._raw_text.insert("1.0", raw_text)
         self._raw_text.configure(state="disabled")
         self._corrected_text.insert("1.0", processed_text)
+        self._corrected_text.edit_modified(False)
         self._refresh_diff(raw_text, processed_text)
         self._refresh_suggestions(raw_text, processed_text)
         self._status_var.set("Redigera texten och spara när den stämmer.")
@@ -294,6 +297,24 @@ class CorrectionWindow:
                 values=(suggestion["from"], suggestion["to"]),
             )
         self._update_suggestion_hint(raw_text, corrected_text)
+
+    def _on_corrected_modified(self, event=None):
+        if not self._corrected_text.edit_modified():
+            return
+        self._corrected_text.edit_modified(False)
+        if self._refresh_after_id:
+            self._root.after_cancel(self._refresh_after_id)
+        self._refresh_after_id = self._root.after(250, self._refresh_from_editor)
+
+    def _refresh_from_editor(self):
+        self._refresh_after_id = None
+        if not self._record:
+            return
+
+        raw_text = self._record.get("raw_text") or ""
+        corrected_text = self._corrected_text.get("1.0", "end").strip()
+        self._refresh_diff(raw_text, corrected_text)
+        self._refresh_suggestions(raw_text, corrected_text)
 
     def _refresh_diff(self, raw_text, corrected_text):
         diff_lines = _format_diff(raw_text, corrected_text)
