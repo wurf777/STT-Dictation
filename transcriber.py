@@ -3,7 +3,7 @@
 import os
 import re
 import sys
-from typing import Optional
+from typing import Optional, TypedDict
 
 # Add NVIDIA pip package DLL paths so CTranslate2 can find cublas/cudnn.
 # Handles both normal Python environments and PyInstaller bundles.
@@ -37,7 +37,16 @@ import numpy as np
 from faster_whisper import WhisperModel
 
 import config
+from post_processor import post_process
 from config import WHISPER_MODEL, LANGUAGE
+
+
+class TranscriptionResult(TypedDict):
+    raw_text: str
+    text: str
+    segments: list[dict]
+    words: list[dict]
+    pauses: list[dict]
 
 
 class Transcriber:
@@ -77,11 +86,15 @@ class Transcriber:
 
     def transcribe(self, audio: np.ndarray) -> str:
         """Transcribe a float32 audio array and return the full text."""
+        return self.transcribe_details(audio)["text"]
+
+    def transcribe_details(self, audio: np.ndarray) -> TranscriptionResult:
+        """Transcribe audio and return both raw and processed text."""
         if self._model is None:
             raise RuntimeError("Model not loaded — call load_model() first")
 
         if len(audio) == 0:
-            return ""
+            return {"raw_text": "", "text": "", "segments": [], "words": [], "pauses": []}
 
         segments, info = self._model.transcribe(
             audio,
@@ -93,10 +106,40 @@ class Transcriber:
         )
 
         text_parts = []
+        segment_details = []
+        word_details = []
         for segment in segments:
             text_parts.append(segment.text.strip())
+            segment_details.append(
+                {
+                    "start": round(float(segment.start), 3),
+                    "end": round(float(segment.end), 3),
+                    "text": segment.text.strip(),
+                }
+            )
+            for word in segment.words or []:
+                word_details.append(
+                    {
+                        "start": round(float(word.start), 3),
+                        "end": round(float(word.end), 3),
+                        "word": word.word.strip(),
+                    }
+                )
 
-        return _apply_replacements(" ".join(text_parts))
+        raw_text = " ".join(text_parts)
+        replaced_text = _apply_replacements(raw_text)
+        processed_text = (
+            post_process(replaced_text)
+            if config.get("post_process_enabled")
+            else replaced_text
+        )
+        return {
+            "raw_text": raw_text,
+            "text": processed_text,
+            "segments": segment_details,
+            "words": word_details,
+            "pauses": _build_pauses(word_details),
+        }
 
     def transcribe_streaming(self, audio: np.ndarray):
         """Yield segments one by one for progressive display."""
@@ -142,3 +185,23 @@ def _apply_replacements(text: str) -> str:
             print(f"[vocab] ersätter '{src}' → '{dst}'")
             text = new_text
     return text
+
+
+def _build_pauses(words: list[dict]) -> list[dict]:
+    pauses = []
+    previous = None
+    for current in words:
+        if previous:
+            duration = round(current["start"] - previous["end"], 3)
+            if duration > 0:
+                pauses.append(
+                    {
+                        "after_word": previous["word"],
+                        "before_word": current["word"],
+                        "start": previous["end"],
+                        "end": current["start"],
+                        "duration": duration,
+                    }
+                )
+        previous = current
+    return pauses

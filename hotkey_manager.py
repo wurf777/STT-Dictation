@@ -83,3 +83,34 @@ class HotkeyManager:
         self._is_pressed = False
         if self._on_release:
             self._on_release()
+
+
+class SimpleHotkey:
+    """Small wrapper for one-shot global hotkeys."""
+
+    def __init__(self, hotkey, callback):
+        self.hotkey = hotkey
+        self._callback = callback
+        self._hook = None
+
+    def start(self):
+        if not self.hotkey or self._hook is not None:
+            return
+
+        self._hook = keyboard.add_hotkey(
+            self.hotkey,
+            self._callback,
+            suppress=False,
+            trigger_on_release=False,
+        )
+        print(f"[hotkey] Lyssnar på {self.hotkey}")
+
+    def stop(self):
+        if self._hook is None:
+            return
+
+        try:
+            keyboard.remove_hotkey(self._hook)
+        except (KeyError, ValueError):
+            pass
+        self._hook = None

@@ -17,12 +17,14 @@ if os.path.isdir(_tcl_dir) and "TCL_LIBRARY" not in os.environ:
 
 from recorder import Recorder
 from transcriber import Transcriber
-from hotkey_manager import HotkeyManager
-from output_handler import output_text
+from hotkey_manager import HotkeyManager, SimpleHotkey
+from output_handler import output_last_text, output_text
 from feedback_window import FeedbackWindow
 from tray import TrayIcon
 from settings_window import SettingsWindow
 from vocabulary_window import VocabularyWindow
+from correction_window import CorrectionWindow
+from dictation_history import get_last_dictation, log_dictation, save_correction
 import config
 
 
@@ -35,6 +37,7 @@ class App:
             on_exit=self.shutdown,
             on_settings=self.open_settings,
             on_vocabulary=self.open_vocabulary,
+            on_correct_last=self.open_correction,
         )
         self.hotkey = HotkeyManager(
             on_press=self.on_hotkey_press,
@@ -43,8 +46,15 @@ class App:
         )
         self.settings_window = SettingsWindow(on_save=self._apply_settings)
         self.vocabulary_window = VocabularyWindow()
+        self.correction_window = CorrectionWindow(
+            get_record=get_last_dictation,
+            on_save=save_correction,
+            on_paste=output_text,
+        )
         self._audio_device = config.get("audio_device")
         self._transcribe_lock = threading.Lock()
+        self._repaste_hotkey = None
+        self._correction_hotkey = None
 
     def run(self):
         """Start all components and run the app."""
@@ -63,6 +73,8 @@ class App:
 
         # Start hotkey listener
         self.hotkey.start()
+        self._start_repaste_hotkey()
+        self._start_correction_hotkey()
 
         print("[app] Redo! Håll F9 för att diktera.")
 
@@ -102,14 +114,29 @@ class App:
         self.tray.update_title("STT Dictation — Transkriberar...")
 
         # Transcribe in a separate thread to avoid blocking the hotkey listener
-        threading.Thread(target=self._transcribe_and_output, args=(audio,), daemon=True).start()
+        threading.Thread(
+            target=self._transcribe_and_output,
+            args=(audio, duration),
+            daemon=True,
+        ).start()
 
-    def _transcribe_and_output(self, audio):
+    def _transcribe_and_output(self, audio, duration):
         with self._transcribe_lock:
             try:
-                text = self.transcriber.transcribe(audio)
+                result = self.transcriber.transcribe_details(audio)
+                raw_text = result["raw_text"]
+                text = result["text"]
                 if text:
                     output_text(text)
+                    log_dictation(
+                        raw_text=raw_text,
+                        processed_text=text,
+                        output_text=text,
+                        duration_seconds=duration,
+                        segments=result.get("segments", []),
+                        words=result.get("words", []),
+                        pauses=result.get("pauses", []),
+                    )
                     if self.feedback:
                         self.feedback.update_text(text)
                         self.feedback.hide_after_delay()
@@ -132,6 +159,10 @@ class App:
         """Open the vocabulary window."""
         self.vocabulary_window.open()
 
+    def open_correction(self):
+        """Open correction window for the latest dictation."""
+        self.correction_window.open()
+
     def _apply_settings(self):
         """Called when settings are saved — apply changes live."""
         # Update audio device
@@ -150,6 +181,9 @@ class App:
             )
             self.hotkey.start()
 
+        self._restart_repaste_hotkey()
+        self._restart_correction_hotkey()
+
         # Toggle feedback window
         if config.get("show_feedback_window") and not self.feedback:
             self.feedback = FeedbackWindow()
@@ -165,9 +199,60 @@ class App:
         """Clean up and exit."""
         print("[app] Avslutar...")
         self.hotkey.stop()
+        self._stop_repaste_hotkey()
+        self._stop_correction_hotkey()
         if self.feedback:
             self.feedback.shutdown()
         self.tray.stop()
+
+    def _start_repaste_hotkey(self):
+        hotkey = config.get("repaste_hotkey")
+        if not hotkey:
+            return
+
+        self._repaste_hotkey = SimpleHotkey(hotkey, self._repaste_last_text)
+        self._repaste_hotkey.start()
+
+    def _stop_repaste_hotkey(self):
+        if self._repaste_hotkey is None:
+            return
+
+        self._repaste_hotkey.stop()
+        self._repaste_hotkey = None
+
+    def _restart_repaste_hotkey(self):
+        self._stop_repaste_hotkey()
+        self._start_repaste_hotkey()
+
+    def _start_correction_hotkey(self):
+        hotkey = config.get("correction_hotkey")
+        if not hotkey:
+            return
+
+        self._correction_hotkey = SimpleHotkey(hotkey, self.open_correction)
+        self._correction_hotkey.start()
+
+    def _stop_correction_hotkey(self):
+        if self._correction_hotkey is None:
+            return
+
+        self._correction_hotkey.stop()
+        self._correction_hotkey = None
+
+    def _restart_correction_hotkey(self):
+        self._stop_correction_hotkey()
+        self._start_correction_hotkey()
+
+    def _repaste_last_text(self):
+        if output_last_text(mode="auto_paste"):
+            if self.feedback:
+                self.feedback.show("Klistrade in senaste diktat igen")
+                self.feedback.hide_after_delay(1500)
+            return
+
+        if self.feedback:
+            self.feedback.show("Inget senaste diktat finns")
+            self.feedback.hide_after_delay(1500)
 
 
 def cli_test():

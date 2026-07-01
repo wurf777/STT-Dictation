@@ -9,6 +9,7 @@ dist/
 
 # User settings
 settings.json
+data/
 
 # Internal dev notes
 CLAUDE.md
@@ -24,3 +25,4 @@ docs/PLAN.md
 # OS-skräp
 Thumbs.db
 .DS_Store
+*.zip

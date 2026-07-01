@@ -42,7 +42,15 @@ python main.py --cli
 
 1. **Håll F9** (eller din konfigurerade tangent) — inspelning startar
 2. **Släpp** — transkribering körs, texten klistras in i det aktiva fönstret
-3. **Högerklicka tray-ikonen** — öppna inställningar eller avsluta
+3. **Tryck F10** — klistra in senaste diktat igen om markören hamnade fel
+4. **Tryck Ctrl+Alt+F10** — korrigera senaste diktat och spara facit för inlärning
+5. **Högerklicka tray-ikonen** — öppna ordlista, korrigering, inställningar eller avsluta
+
+Vid automatisk inklistring återställs texturklippet efteråt, så tidigare kopierad text ligger kvar. Det senaste diktatet sparas samtidigt i appens eget minne och kan klistras in igen med F10.
+
+Appen sparar också en lokal diktathistorik i `data/dictation_history.jsonl` när inlärning är aktiverad. Filen innehåller rå Whisper-text, texten som appen skickade vidare, ordtider, segmenttider och pauser mellan ord. `data/` ignoreras av git eftersom innehållet kan vara privat.
+
+Efterprocessorn tolkar svenska dikteringskommandon som `komma`, `punkt`, `frågetecken`, `utropstecken`, `ny rad` och `nytt stycke`.
 
 ## Inställningar
 

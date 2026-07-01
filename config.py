@@ -21,6 +21,14 @@ DEFAULTS = {
     "beam_size": 5,                    # 1 = snabbast, 5 = bäst kvalitet
     "vocabulary": [],                  # Ord/namn som nudgar modellen (initial_prompt)
     "replacements": {},                # {"fel stavning": "rätt stavning"} — efterbehandling
+    "restore_clipboard_after_paste": True,
+    "clipboard_paste_delay_ms": 75,
+    "clipboard_restore_delay_ms": 500,
+    "repaste_hotkey": "F10",
+    "correction_hotkey": "ctrl+alt+f10",
+    "dictation_learning_enabled": True,
+    "dictation_history_path": os.path.join("data", "dictation_history.jsonl"),
+    "post_process_enabled": True,
 }
 
 # ── Load / Save ──────────────────────────────────────────────
