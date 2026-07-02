@@ -19,6 +19,46 @@ MUTED = "#a6adc8"
 ACCENT = "#45475a"
 
 
+class ToolTip:
+    """Small hover tooltip for tkinter widgets."""
+
+    def __init__(self, widget, text):
+        self._widget = widget
+        self._text = text
+        self._window = None
+        widget.bind("<Enter>", self._show)
+        widget.bind("<Leave>", self._hide)
+        widget.bind("<ButtonPress>", self._hide)
+
+    def _show(self, event=None):
+        if self._window or not self._text:
+            return
+        x = self._widget.winfo_rootx() + 16
+        y = self._widget.winfo_rooty() + self._widget.winfo_height() + 8
+        self._window = tk.Toplevel(self._widget)
+        self._window.wm_overrideredirect(True)
+        self._window.wm_geometry(f"+{x}+{y}")
+        label = tk.Label(
+            self._window,
+            text=self._text,
+            justify="left",
+            bg="#f5f5f5",
+            fg="#1f1f1f",
+            relief="solid",
+            borderwidth=1,
+            padx=8,
+            pady=5,
+            wraplength=320,
+            font=("Segoe UI", 9),
+        )
+        label.pack()
+
+    def _hide(self, event=None):
+        if self._window:
+            self._window.destroy()
+            self._window = None
+
+
 class CorrectionWindow:
     """Correction editor with simple learning-rule suggestions."""
 
@@ -167,30 +207,50 @@ class CorrectionWindow:
 
         suggestion_buttons = tk.Frame(suggestions_frame, bg=BG)
         suggestion_buttons.grid(row=1, column=0, columnspan=2, sticky="e", pady=(6, 0))
-        tk.Button(
+        approve_selected_btn = tk.Button(
             suggestion_buttons,
-            text="Godkänn markerad",
+            text="Använd markerad",
             font=font,
             command=self._approve_selected_suggestion,
-        ).pack(side="right", padx=(8, 0))
-        tk.Button(
+        )
+        approve_selected_btn.pack(side="right", padx=(8, 0))
+        ToolTip(
+            approve_selected_btn,
+            "Aktiverar markerat förslag direkt som en ersättningsregel.",
+        )
+        approve_all_btn = tk.Button(
             suggestion_buttons,
-            text="Godkänn alla",
+            text="Använd alla",
             font=font,
             command=self._approve_all_suggestions,
-        ).pack(side="right")
-        tk.Button(
+        )
+        approve_all_btn.pack(side="right")
+        ToolTip(
+            approve_all_btn,
+            "Aktiverar alla förslag direkt som ersättningsregler.",
+        )
+        basket_selected_btn = tk.Button(
             suggestion_buttons,
-            text="Lägg markerad i korg",
+            text="Spara markerad",
             font=font,
             command=self._basket_selected_suggestion,
-        ).pack(side="right", padx=(8, 0))
-        tk.Button(
+        )
+        basket_selected_btn.pack(side="right", padx=(8, 0))
+        ToolTip(
+            basket_selected_btn,
+            "Sparar markerat förslag i lärandekorgen utan att använda det än.",
+        )
+        basket_all_btn = tk.Button(
             suggestion_buttons,
-            text="Lägg alla i korg",
+            text="Spara alla",
             font=font,
             command=self._basket_all_suggestions,
-        ).pack(side="right")
+        )
+        basket_all_btn.pack(side="right")
+        ToolTip(
+            basket_all_btn,
+            "Sparar alla förslag i lärandekorgen för senare granskning.",
+        )
 
         self._status_var = tk.StringVar(master=root)
         tk.Label(root, textvariable=self._status_var, font=font, bg=BG, fg=MUTED).grid(
@@ -276,7 +336,7 @@ class CorrectionWindow:
             self._refresh_suggestions(self._record.get("raw_text") or "", corrected)
             if self._suggestions:
                 self._status_var.set(
-                    "Sparat. Jag hittade förslag som du kan godkänna eller lägga i korgen."
+                    "Sparat. Du kan använda förslagen direkt eller spara dem för senare."
                 )
             else:
                 self._status_var.set("Sparat. Ingen säker regel hittades automatiskt.")
@@ -334,7 +394,7 @@ class CorrectionWindow:
             )
         elif self._suggestions:
             self._suggestion_hint_var.set(
-                "Appen hittade konkreta skillnader. Godkänn dem direkt eller lägg dem i lärandekorgen för senare genomgång."
+                "Appen hittade konkreta skillnader. Använd dem direkt som regler eller spara dem för senare granskning."
             )
         else:
             self._suggestion_hint_var.set(
@@ -357,7 +417,7 @@ class CorrectionWindow:
     def _approve_all_suggestions(self):
         items = self._suggestion_tree.get_children()
         if not items:
-            self._status_var.set("Inga förslag att godkänna.")
+            self._status_var.set("Inga förslag att använda.")
             return
         self._approve_items(items)
 
@@ -371,7 +431,7 @@ class CorrectionWindow:
     def _basket_all_suggestions(self):
         items = self._suggestion_tree.get_children()
         if not items:
-            self._status_var.set("Inga förslag att lägga i korgen.")
+            self._status_var.set("Inga förslag att spara för senare.")
             return
         self._basket_items(items)
 
@@ -391,7 +451,7 @@ class CorrectionWindow:
             for item in self._suggestion_tree.get_children()
         ]
         if approved:
-            self._status_var.set(f"Godkände {approved} regel/regler till ordlistan.")
+            self._status_var.set(f"Använder {approved} regel/regler i ordlistan.")
         else:
             self._status_var.set("Ingen regel sparades.")
 
@@ -412,9 +472,9 @@ class CorrectionWindow:
                 saved += 1
 
         if saved:
-            self._status_var.set(f"Lade {saved} förslag i lärandekorgen.")
+            self._status_var.set(f"Sparade {saved} förslag för senare granskning.")
         else:
-            self._status_var.set("Inget förslag lades i korgen.")
+            self._status_var.set("Inget förslag sparades för senare.")
 
     def _on_close(self):
         if self._root:

@@ -108,9 +108,9 @@ Bygg och deploy:
 - `learning_suggestions.py` jamfor ra Whisper-text med korrigerat facit och
   foreslar korta konkreta ersattningsregler.
 - `correction_window.py` visar nu en lista med forslag under korrigeringsrutan.
-- Knapparna `Godkann markerad` och `Godkann alla` sparar forslag till
+- Knapparna `Anvand markerad` och `Anvand alla` sparar forslag till
   `replacements` i `settings.json`.
-- Knapparna `Lagg markerad i korg` och `Lagg alla i korg` sparar forslag till
+- Knapparna `Spara markerad` och `Spara alla` sparar forslag till
   `data/learning_basket.jsonl` utan att aktivera dem.
 - Det ar medvetet att forsta versionen anvander `replacements` i stallet for
   `vocabulary`: ersattningar ar exakta och ger direkt effekt, medan vocabulary
