@@ -56,6 +56,14 @@ class SettingsWindow:
         self._output_var = tk.StringVar(master=root)
         self._feedback_var = tk.BooleanVar(master=root)
         self._beam_var = tk.IntVar(master=root)
+        self._repaste_hotkey_var = tk.StringVar(master=root)
+        self._correction_hotkey_var = tk.StringVar(master=root)
+        self._restore_clipboard_var = tk.BooleanVar(master=root)
+        self._post_process_var = tk.BooleanVar(master=root)
+        self._learning_var = tk.BooleanVar(master=root)
+        self._smart_space_var = tk.BooleanVar(master=root)
+        self._smart_period_var = tk.BooleanVar(master=root)
+        self._smart_window_var = tk.IntVar(master=root)
 
         # Header
         tk.Label(root, text="Inställningar", font=font_bold, bg=BG, fg=FG).grid(
@@ -78,6 +86,25 @@ class SettingsWindow:
         self._hotkey_btn = tk.Button(
             hk_frame, text="Ändra...", font=font, command=self._start_hotkey_capture)
         self._hotkey_btn.pack(side="left")
+        row += 1
+
+        tk.Label(root, text="Extra snabbknappar:", font=font, bg=BG, fg=FG).grid(
+            row=row, column=0, sticky="nw", **pad)
+
+        extra_hotkey_frame = tk.Frame(root, bg=BG)
+        extra_hotkey_frame.grid(row=row, column=1, sticky="ew", **pad)
+
+        tk.Label(extra_hotkey_frame, text="Klistra in senaste", font=font,
+                 bg=BG, fg=FG).grid(row=0, column=0, sticky="w", padx=(0, 8), pady=(0, 4))
+        tk.Entry(extra_hotkey_frame, textvariable=self._repaste_hotkey_var,
+                 font=font, bg=FIELD_BG, fg=FG, insertbackground=FG,
+                 width=16).grid(row=0, column=1, sticky="w", pady=(0, 4))
+
+        tk.Label(extra_hotkey_frame, text="Korrigera senaste", font=font,
+                 bg=BG, fg=FG).grid(row=1, column=0, sticky="w", padx=(0, 8))
+        tk.Entry(extra_hotkey_frame, textvariable=self._correction_hotkey_var,
+                 font=font, bg=FIELD_BG, fg=FG, insertbackground=FG,
+                 width=16).grid(row=1, column=1, sticky="w")
         row += 1
 
         # ── Audio device ─────────────────────────────────────
@@ -139,6 +166,54 @@ class SettingsWindow:
                  bg=BG, fg="#6c7086").pack(side="left", padx=(8, 0))
         row += 1
 
+        tk.Label(root, text="Textbearbetning:", font=font, bg=BG, fg=FG).grid(
+            row=row, column=0, sticky="nw", **pad)
+
+        processing_frame = tk.Frame(root, bg=BG)
+        processing_frame.grid(row=row, column=1, sticky="ew", **pad)
+
+        for text, variable in [
+            ("Efterprocessa text och kommandon", self._post_process_var),
+            ("Logga diktat för inlärning", self._learning_var),
+            ("Återställ urklipp efter inklistring", self._restore_clipboard_var),
+        ]:
+            tk.Checkbutton(processing_frame, text=text,
+                           variable=variable,
+                           font=font, bg=BG, fg=FG,
+                           selectcolor="#45475a",
+                           activebackground=BG, activeforeground=FG).pack(anchor="w")
+        row += 1
+
+        tk.Label(root, text="Smart fortsättning:", font=font, bg=BG, fg=FG).grid(
+            row=row, column=0, sticky="nw", **pad)
+
+        smart_frame = tk.Frame(root, bg=BG)
+        smart_frame.grid(row=row, column=1, sticky="ew", **pad)
+
+        tk.Checkbutton(smart_frame, text="Lägg till blanksteg vid fortsättning",
+                       variable=self._smart_space_var,
+                       font=font, bg=BG, fg=FG,
+                       selectcolor="#45475a",
+                       activebackground=BG, activeforeground=FG).pack(anchor="w")
+
+        tk.Checkbutton(smart_frame, text="Ta bort föregående punkt vid fortsättning",
+                       variable=self._smart_period_var,
+                       font=font, bg=BG, fg=FG,
+                       selectcolor="#45475a",
+                       activebackground=BG, activeforeground=FG).pack(anchor="w")
+
+        smart_window_frame = tk.Frame(smart_frame, bg=BG)
+        smart_window_frame.pack(anchor="w", pady=(4, 0))
+        tk.Label(smart_window_frame, text="Tidsfönster:", font=font,
+                 bg=BG, fg=FG).pack(side="left", padx=(0, 8))
+        tk.Spinbox(smart_window_frame, from_=5, to=600, increment=5,
+                   textvariable=self._smart_window_var, font=font,
+                   bg=FIELD_BG, fg=FG, insertbackground=FG,
+                   width=6).pack(side="left")
+        tk.Label(smart_window_frame, text="sekunder", font=("Segoe UI", 9),
+                 bg=BG, fg="#6c7086").pack(side="left", padx=(8, 0))
+        row += 1
+
         # ── Buttons ──────────────────────────────────────────
         btn_frame = tk.Frame(root, bg=BG)
         btn_frame.grid(row=row, column=0, columnspan=2, pady=(12, 15), padx=10, sticky="e")
@@ -195,6 +270,14 @@ class SettingsWindow:
         self._output_var.set(config.get("output_mode") or "auto_paste")
         self._feedback_var.set(config.get("show_feedback_window") if config.get("show_feedback_window") is not None else True)
         self._beam_var.set(config.get("beam_size") or 5)
+        self._repaste_hotkey_var.set(config.get("repaste_hotkey") or "")
+        self._correction_hotkey_var.set(config.get("correction_hotkey") or "")
+        self._restore_clipboard_var.set(bool(config.get("restore_clipboard_after_paste")))
+        self._post_process_var.set(bool(config.get("post_process_enabled")))
+        self._learning_var.set(bool(config.get("dictation_learning_enabled")))
+        self._smart_space_var.set(bool(config.get("smart_leading_space_enabled")))
+        self._smart_period_var.set(bool(config.get("smart_remove_previous_period_enabled")))
+        self._smart_window_var.set(config.get("smart_leading_space_window_seconds") or 90)
 
     def _start_hotkey_capture(self):
         """Enter hotkey capture mode — supports single keys and combinations."""
@@ -230,13 +313,25 @@ class SettingsWindow:
         config.set("output_mode", self._output_var.get())
         config.set("show_feedback_window", self._feedback_var.get())
         config.set("beam_size", self._beam_var.get())
+        config.set("repaste_hotkey", self._repaste_hotkey_var.get().strip())
+        config.set("correction_hotkey", self._correction_hotkey_var.get().strip())
+        config.set("restore_clipboard_after_paste", self._restore_clipboard_var.get())
+        config.set("post_process_enabled", self._post_process_var.get())
+        config.set("dictation_learning_enabled", self._learning_var.get())
+        config.set("smart_leading_space_enabled", self._smart_space_var.get())
+        config.set("smart_remove_previous_period_enabled", self._smart_period_var.get())
+        config.set("smart_leading_space_window_seconds", self._smart_window_seconds())
 
         config.save()
         print(f"[settings] Sparade: hotkey={config.get('hotkey')}, "
               f"output={config.get('output_mode')}, "
               f"device={config.get('audio_device')}, "
               f"feedback={config.get('show_feedback_window')}, "
-              f"beam_size={config.get('beam_size')}")
+              f"beam_size={config.get('beam_size')}, "
+              f"repaste_hotkey={config.get('repaste_hotkey')}, "
+              f"correction_hotkey={config.get('correction_hotkey')}, "
+              f"smart_space={config.get('smart_leading_space_enabled')}, "
+              f"smart_period={config.get('smart_remove_previous_period_enabled')}")
 
         if self._on_save:
             self._on_save()
@@ -247,3 +342,10 @@ class SettingsWindow:
         self._capturing_hotkey = False
         if self._root:
             self._root.withdraw()  # Hide, don't destroy
+
+    def _smart_window_seconds(self):
+        try:
+            value = int(self._smart_window_var.get())
+        except (tk.TclError, ValueError):
+            value = 90
+        return max(5, min(600, value))
