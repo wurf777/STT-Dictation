@@ -128,6 +128,40 @@ Regler är bättre för exakta, återkommande saker:
 - `utropstecken,` -> `!`
 - mellanslag runt skiljetecken
 
+## Framtida: förbättringsförslag efter diktat
+
+Målet är inte att appen ska visa vaga varningar. Christian ser ofta själv när
+texten blivit fel. Värdet ska i stället vara att appen redan har ett färdigt
+förslag.
+
+Flöde:
+
+1. Texten klistras in direkt som vanligt.
+2. Appen skickar råtext och faktisk output till ett analyslager.
+3. Om analyslagret har ett tydligt bättre förslag visas en liten diskret ruta.
+4. Christian kan välja `Använd`, `Ignorera` eller `Lär av detta`.
+5. `Använd` ersätter senaste inklistrade text med förslaget.
+6. `Lär av detta` sparar original och förslag i historik eller lärandekorg.
+
+Exempel:
+
+```text
+Original: två filer till Jason-filerna
+Förslag: två JSON-filer
+```
+
+Bra kandidater:
+
+- självkorrigeringar i tal
+- upprepningar
+- taligt språk som borde bli skriven text
+- uppenbara sammanhangsfel, till exempel `Jason` när sammanhanget handlar om
+  `JSON`
+- konstig interpunktion som inte kan lösas med enkla regler
+
+Funktionen bör vara valfri och försiktig. Den ska inte stoppa diktatflödet, och
+den ska inte skriva om all text automatiskt utan godkännande.
+
 ## Testkommandon
 
 Efterprocessor:
