@@ -6,6 +6,8 @@ import threading
 from PIL import Image
 import pystray
 
+import config
+
 
 def _load_icon_image():
     """Load icon.png — checks _MEIPASS (PyInstaller _internal/) then exe dir."""
@@ -22,6 +24,19 @@ def _load_icon_image():
     raise FileNotFoundError(f"icon.png hittades inte. Sökte i: {candidates}")
 
 
+def _format_hotkey(hotkey):
+    if not hotkey:
+        return ""
+    return "+".join(part.strip().capitalize() for part in hotkey.split("+"))
+
+
+def _label_with_hotkey(label, hotkey):
+    formatted = _format_hotkey(hotkey)
+    if not formatted:
+        return label
+    return f"{label} ({formatted})"
+
+
 class TrayIcon:
     def __init__(
         self,
@@ -29,11 +44,13 @@ class TrayIcon:
         on_settings=None,
         on_vocabulary=None,
         on_correct_last=None,
+        on_repaste_last=None,
     ):
         self._on_exit = on_exit
         self._on_settings = on_settings
         self._on_vocabulary = on_vocabulary
         self._on_correct_last = on_correct_last
+        self._on_repaste_last = on_repaste_last
         self._icon = None
 
     def start(self):
@@ -42,7 +59,14 @@ class TrayIcon:
             pystray.MenuItem("STT Dictation", None, enabled=False),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("Ordlista...", self._vocabulary_clicked),
-            pystray.MenuItem("Korrigera senaste diktat...", self._correct_last_clicked),
+            pystray.MenuItem(
+                _label_with_hotkey("Klistra in senaste diktat", config.get("repaste_hotkey")),
+                self._repaste_last_clicked,
+            ),
+            pystray.MenuItem(
+                _label_with_hotkey("Korrigera senaste diktat", config.get("correction_hotkey")),
+                self._correct_last_clicked,
+            ),
             pystray.MenuItem("Inställningar...", self._settings_clicked),
             pystray.MenuItem("Avsluta", self._exit_clicked),
         )
@@ -75,6 +99,10 @@ class TrayIcon:
     def _correct_last_clicked(self, icon, item):
         if self._on_correct_last:
             self._on_correct_last()
+
+    def _repaste_last_clicked(self, icon, item):
+        if self._on_repaste_last:
+            self._on_repaste_last()
 
     def _exit_clicked(self, icon, item):
         # on_exit callback (shutdown) calls tray.stop(), so no need to call it here

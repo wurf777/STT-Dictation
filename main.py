@@ -38,6 +38,7 @@ class App:
             on_settings=self.open_settings,
             on_vocabulary=self.open_vocabulary,
             on_correct_last=self.open_correction,
+            on_repaste_last=self._repaste_last_text,
         )
         self.hotkey = HotkeyManager(
             on_press=self.on_hotkey_press,
