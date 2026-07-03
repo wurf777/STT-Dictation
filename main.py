@@ -49,7 +49,7 @@ class App:
         self.correction_window = CorrectionWindow(
             get_record=get_last_dictation,
             on_save=save_correction,
-            on_paste=output_text,
+            on_paste=lambda text: output_text(text, allow_smart_spacing=False),
         )
         self._audio_device = config.get("audio_device")
         self._transcribe_lock = threading.Lock()
@@ -127,11 +127,11 @@ class App:
                 raw_text = result["raw_text"]
                 text = result["text"]
                 if text:
-                    output_text(text)
+                    pasted_text = output_text(text)
                     log_dictation(
                         raw_text=raw_text,
                         processed_text=text,
-                        output_text=text,
+                        output_text=pasted_text,
                         duration_seconds=duration,
                         segments=result.get("segments", []),
                         words=result.get("words", []),
